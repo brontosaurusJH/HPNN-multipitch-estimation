@@ -13,11 +13,11 @@ Chin-Yun Yu, Jing-Hua Lin and Li Su, "Harmonic preserving neural networks for ef
 
 ## Dependencies
 
-pytorch 1.0.1 / cuda 10.0 / driver-410
-torchaudio 0.2
-intervaltree
-pretty_midi
-python-acoustics
+* pytorch 1.0.1 / cuda 10.0 / driver-410
+* torchaudio 0.2
+* intervaltree
+* pretty_midi
+* python-acoustics
 
 
 
