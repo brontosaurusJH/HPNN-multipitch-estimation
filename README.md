@@ -2,11 +2,11 @@
 
 ## HPNN
 
-HPNN stands for **Harmonic preserving neural networks**.
+HPNN stands for **Harmonic Preserving Neural Networks**, a method for multipirch estimation.
 
 This repository is the code companion with the paper:
 
-Chin-Yun Yu, Jing-Hua Lin and Li Su, "Harmonic preserving neural networks for efficient and robust multipitch estimation," *Proc. Asia Pacific Signal and Infor. Proc. Asso. Annual Summit and Conf. (APSIPA ASC)*, December 2020.
+> Chin-Yun Yu, Jing-Hua Lin and Li Su, "Harmonic preserving neural networks for efficient and robust multipitch estimation," *Proc. Asia Pacific Signal and Infor. Proc. Asso. Annual Summit and Conf. (APSIPA ASC)*, December 2020.
 
 
 
@@ -60,7 +60,7 @@ python test_musicnet.py --snr 30
 
 
 
-### Tasks
+## Tasks
 
 - [x] Training / testing on MusicNet
 - [ ] Training / testing on MAPS
