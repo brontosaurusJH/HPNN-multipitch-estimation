@@ -40,6 +40,7 @@ parser.add_argument('--depth', type=int, default=6)
 parser.add_argument('--trainsize', type=int, default=314)
 # 314 = 100% of MusicNet training data
 
+
 def init_weight(m):
     if type(m) == nn.Conv2d:
         N = m.in_channels * np.prod(m.kernel_size)
@@ -47,9 +48,11 @@ def init_weight(m):
         if type(m.bias) == torch.Tensor:
             m.bias.data.fill_(0)
 
+
 def remove_weight_norms(m):
     if hasattr(m, 'weight_g'):
         nn.utils.remove_weight_norm(m)
+
 
 def add_weight_norms(m):
     if hasattr(m, 'weight'):
@@ -84,22 +87,24 @@ if __name__ == '__main__':
     # train_set = MusicNet(args.root, type='train', trainsize=trainsize, preprocess=args.preprocess, normalize=True, window=frame_size, epoch_size=esize)
 
     # -- with data augmentation
-    train_set = MusicNet(args.root, type='train', trainsize=trainsize, preprocess=args.preprocess, 
-                        pitch_transform=5, jitter=.1,
-                        normalize=True, window=frame_size, epoch_size=esize)
+    train_set = MusicNet(args.root, type='train', trainsize=trainsize, preprocess=args.preprocess,
+                         pitch_shift=5, jitter=.1,
+                         normalize=True, window=frame_size, epoch_size=esize)
     valid_set = MusicNet(args.root, type='valid', preprocess=False, normalize=True, window=frame_size,
-                        epoch_size=batch_size * 10)
+                         epoch_size=batch_size * 10)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, num_workers=0)
     valid_loader = DataLoader(valid_set, batch_size=batch_size, num_workers=0)
 
     print('\n ==> Building model...\n')
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    net = MLC_CFP_pianoroll(winsize, sr, g, hopsize, harms_range, num_regions, mlc_trainable).to(device)
+    net = MLC_CFP_pianoroll(winsize, sr, g, hopsize,
+                            harms_range, num_regions, mlc_trainable).to(device)
     # net.apply(init_weight)
     # net.apply(add_weight_norms)
 
-    print("    This model has", sum(p.numel() for p in net.parameters() if p.requires_grad), "parameters.\n")
+    print("    This model has", sum(p.numel()
+                                    for p in net.parameters() if p.requires_grad), "parameters.\n")
     if device == 'cuda':
         cudnn.benchmark = True
     if torch.cuda.device_count() > 1:
@@ -108,11 +113,12 @@ if __name__ == '__main__':
     criterion = nn.BCEWithLogitsLoss()
 
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[12000], gamma=0.2)
+    scheduler = optim.lr_scheduler.MultiStepLR(
+        optimizer, milestones=[12000], gamma=0.2)
 
     print("==> Start Training.\n")
     print(" step | average_loss | avp_train | average_precision_score(y_true, y_score)")
-            
+
     global_step = 0
     average_loss = []
     avp_train = []
@@ -154,25 +160,23 @@ if __name__ == '__main__':
                         y_score = np.vstack(y_score).flatten()
                         y_true = np.vstack(y_true).flatten()
                         print("", global_step, np.mean(average_loss), np.mean(avp_train),
-                                average_precision_score(y_true, y_score))
+                              average_precision_score(y_true, y_score))
                         average_loss.clear()
                         avp_train.clear()
                     net.train()
 
-        except KeyboardInterrupt:
-            print('==> Graceful Exit.\n')
-        else:
-            print('==> Finish training.\n')
-            
-            #-- mark ending time
-            t_cost = time() - t_start
-            t_cost = timedelta( seconds=t_cost )
+    except KeyboardInterrupt:
+        print('==> Graceful Exit.\n')
+    else:
+        print('==> Finish training.\n')
 
-            print("\n    RunTime: %s \n" % t_cost)
+        # -- mark ending time
+        t_cost = time() - t_start
+        t_cost = timedelta(seconds=t_cost)
 
-        net.apply(remove_weight_norms)
-        net.cpu()
-        net = net.module if isinstance(net, torch.nn.DataParallel) else net
-        torch.save(net, args.out_model)
+        print("\n    RunTime: %s \n" % t_cost)
 
-
+    net.apply(remove_weight_norms)
+    net.cpu()
+    net = net.module if isinstance(net, torch.nn.DataParallel) else net
+    torch.save(net, args.out_model)
