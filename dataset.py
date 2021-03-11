@@ -28,7 +28,7 @@ class MAPS_Dataset(Dataset):
                  hop_size=441,
                  window_size=16384,
                  epoch_size=100000,
-                 type='train', 
+                 type='train',
                  trainsize='100',
                  *,
                  normalize=True):
@@ -44,31 +44,32 @@ class MAPS_Dataset(Dataset):
         self.trainsize = trainsize / 100
 
         file_ids = list({os.path.splitext(f)[0] for f in os.listdir(folder)})
-        # all 210 pieces for training 
+        # all 210 pieces for training
 
         # full training set has 180 pieces
-        size_train = round( self.trainsize * 180)
-        # full validation set has 30 pieces 
-        size_valid = round( self.trainsize * 30)
+        size_train = round(self.trainsize * 180)
+        # full validation set has 30 pieces
+        size_valid = round(self.trainsize * 30)
 
-        file_ids_valid = random.sample( file_ids, size_valid )
+        file_ids_valid = random.sample(file_ids, size_valid)
         file_ids_train = file_ids
         for i in range(0, size_valid):
             file_ids_train.remove(file_ids_valid[i])
 
-        file_ids_train = random.sample( file_ids_train, size_train )
+        file_ids_train = random.sample(file_ids_train, size_train)
         file_ids_train.sort()
         file_ids_valid.sort()
         # TDL: use Torch.utils.data.dataset.random_split
 
         wav = []
         gt = []
-            
+
         if type == 'train':
-            print( "", len(file_ids_train), "songs for training")
+            print("", len(file_ids_train), "songs for training")
             for filename in file_ids_train:
                 print("-- reading train", filename)
-                y, _ = load(os.path.join(folder, filename + '.wav'), normalization=True, channels_first=False)
+                y, _ = load(os.path.join(folder, filename + '.wav'),
+                            normalization=True, channels_first=False)
                 y = y.mean(1)
                 y = F.pad(y, (window_size // 2, window_size // 2))
                 wav += [y]
@@ -77,13 +78,14 @@ class MAPS_Dataset(Dataset):
             for filename, waves in zip(file_ids_train, wav):
                 tree = read_MAPS_txt(os.path.join(folder, filename + '.txt'))
                 gt += [tree]
-            self.gt = gt   
+            self.gt = gt
 
         elif type == 'valid':
-            print( "", len(file_ids_valid), "songs for validation")
+            print("", len(file_ids_valid), "songs for validation")
             for filename in file_ids_valid:
                 print("-- reading valid", filename)
-                y, _ = load(os.path.join(folder, filename + '.wav'), normalization=True, channels_first=False)
+                y, _ = load(os.path.join(folder, filename + '.wav'),
+                            normalization=True, channels_first=False)
                 y = y.mean(1)
                 y = F.pad(y, (window_size // 2, window_size // 2))
                 wav += [y]
@@ -105,14 +107,15 @@ class MAPS_Dataset(Dataset):
         song_id = np.random.randint(0, len(self.wav))
         # segment_idx = np.random.randint(0, len(self.wav[song_id]))
         # return self.wav[song_id][segment_idx], self.gt[song_id][segment_idx]
-        segment_idx = np.random.randint(0, len(self.wav[song_id]) - self.win_size)
+        segment_idx = np.random.randint(
+            0, len(self.wav[song_id]) - self.win_size)
         y = self.wav[song_id][segment_idx:segment_idx+self.win_size]
         pianoroll = torch.zeros(88)
         tree = self.gt[song_id]
 
         for note in tree[segment_idx/self.sr:(segment_idx+self.win_size)/self.sr]:
             pianoroll[note.data] = 1
-            
+
         if self.normalize:
             y = y / (y.norm() + epsilon)
             # torch.norm
@@ -121,10 +124,9 @@ class MAPS_Dataset(Dataset):
             # dim=None input tensor only 2D 時回傳 matrix norm, only 1D 時回傳 vector norm
             # dim=None 時設 keepdim 會失效
             # 之前是：
-            # y = y / (y.norm(dim=1, keepdim=True) + epsilon) 
+            # y = y / (y.norm(dim=1, keepdim=True) + epsilon)
 
         return y, pianoroll
-
 
 
 class MusicNet(Dataset):
@@ -150,7 +152,7 @@ class MusicNet(Dataset):
     test_data, test_labels, test_tree = 'test_data', 'test_labels', 'test_tree.pckl'
     extracted_folders = [train_data, train_labels, test_data, test_labels]
     metafile = 'musicnet_metadata.csv'
-           
+
     # testset = [2303, 1819, 2382]
     validset = [2131, 2384, 1792, 2514, 2567, 1876]
 
@@ -189,21 +191,23 @@ class MusicNet(Dataset):
 
         if type == 'test':
             self.data_path = os.path.join(self.root, self.test_data)
-            labels_path = os.path.join(self.root, self.test_labels, self.test_tree)
+            labels_path = os.path.join(
+                self.root, self.test_labels, self.test_tree)
         else:
             self.data_path = os.path.join(self.root, self.train_data)
-            labels_path = os.path.join(self.root, self.train_labels, self.train_tree)
+            labels_path = os.path.join(
+                self.root, self.train_labels, self.train_tree)
 
         with open(labels_path, 'rb') as f:
             self.labels = pickle.load(f)
 
-        self.rec_ids = [k for k in list(self.labels.keys()) if k in ids]   
+        self.rec_ids = [k for k in list(self.labels.keys()) if k in ids]
 
         # 314 pieces
         if type == 'train':
             self.rec_ids = [i for i in self.rec_ids if i not in self.validset]
-            self.rec_ids = random.sample( self.rec_ids, self.trainsize )
-            
+            self.rec_ids = random.sample(self.rec_ids, int(self.trainsize))
+
         # 6 pieces
         elif type == 'valid':
             self.rec_ids = [i for i in self.validset if i in self.rec_ids]
@@ -212,13 +216,14 @@ class MusicNet(Dataset):
         else:
             self.rec_ids = [i for i in self.rec_ids]
 
-        print( "\n", len(self.rec_ids), "songs for dataset -", type )
+        print("\n", len(self.rec_ids), "songs for dataset -", type)
         self.records = dict()
         self.open_files = []
 
     def __enter__(self):
         for record in os.listdir(self.data_path):
-            if not record.endswith('.npy'): continue
+            if not record.endswith('.npy'):
+                continue
             if self.mmap:
                 fd = os.open(os.path.join(self.data_path, record), os.O_RDONLY)
                 buff = mmap.mmap(fd, 0, mmap.MAP_SHARED, mmap.PROT_READ)
@@ -259,19 +264,21 @@ class MusicNet(Dataset):
             fid, _ = self.records[rec_id]
             with open(fid, 'rb') as f:
                 f.seek(s * sz_float, os.SEEK_SET)
-                x = np.fromfile(f, dtype=np.float32, count=int(scale * self.window))
+                x = np.fromfile(f, dtype=np.float32,
+                                count=int(scale * self.window))
 
-        if self.normalize: x /= np.linalg.norm(x) + epsilon
+        if self.normalize:
+            x /= np.linalg.norm(x) + epsilon
 
         xp = np.arange(self.window, dtype=np.float32)
-        x = np.interp(scale * xp, np.arange(len(x), dtype=np.float32), x).astype(np.float32)
+        x = np.interp(scale * xp, np.arange(len(x),
+                                            dtype=np.float32), x).astype(np.float32)
 
         y = np.zeros(self.m, dtype=np.float32)
         for label in self.labels[rec_id][s + scale * self.window / 2]:
             y[label.data[1] + shift] = 1
 
         return x, y
-        
 
     def __getitem__(self, index):
         """
@@ -290,7 +297,8 @@ class MusicNet(Dataset):
             jitter = np.random.uniform(-self.jitter, self.jitter)
 
         rec_id = self.rec_ids[np.random.randint(0, len(self.rec_ids))]
-        s = np.random.randint(0, self.records[rec_id][1] - (2. ** ((shift + jitter) / 12.)) * self.window)
+        s = np.random.randint(
+            0, self.records[rec_id][1] - (2. ** ((shift + jitter) / 12.)) * self.window)
         return self.access(rec_id, s, shift, jitter)
 
     def __len__(self):
@@ -298,9 +306,10 @@ class MusicNet(Dataset):
 
     def _check_exists(self):
         return os.path.exists(os.path.join(self.root, self.train_data)) and \
-               os.path.exists(os.path.join(self.root, self.test_data)) and \
-               os.path.exists(os.path.join(self.root, self.train_labels, self.train_tree)) and \
-               os.path.exists(os.path.join(self.root, self.test_labels, self.test_tree))
+            os.path.exists(os.path.join(self.root, self.test_data)) and \
+            os.path.exists(os.path.join(self.root, self.train_labels, self.train_tree)) and \
+            os.path.exists(os.path.join(
+                self.root, self.test_labels, self.test_tree))
 
     def download(self):
         """Download the MusicNet data if it doesn't exist in ``raw_folder`` already."""
@@ -325,7 +334,8 @@ class MusicNet(Dataset):
     # write out wavfiles as arrays for direct mmap access
     def process_data(self, path):
         for item in os.listdir(os.path.join(self.root, path)):
-            if not item.endswith('.wav'): continue
+            if not item.endswith('.wav'):
+                continue
             uid = int(item[:-4])
             _, data = wavfile.read(os.path.join(self.root, path, item))
             np.save(os.path.join(self.root, path, item[:-4]), data)
@@ -334,7 +344,8 @@ class MusicNet(Dataset):
     def process_labels(self, path):
         trees = dict()
         for item in os.listdir(os.path.join(self.root, path)):
-            if not item.endswith('.csv'): continue
+            if not item.endswith('.csv'):
+                continue
             uid = int(item[:-4])
             tree = IntervalTree()
             with open(os.path.join(self.root, path, item), 'r') as f:
@@ -347,7 +358,7 @@ class MusicNet(Dataset):
                     start_beat = float(label['start_beat'])
                     end_beat = float(label['end_beat'])
                     note_value = label['note_value']
-                    tree[start_time:end_time] = (instrument, note, start_beat, end_beat, note_value)
+                    tree[start_time:end_time] = (
+                        instrument, note, start_beat, end_beat, note_value)
             trees[uid] = tree
         return trees
-

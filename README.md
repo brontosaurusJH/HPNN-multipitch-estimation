@@ -26,9 +26,11 @@ Chin-Yun Yu, Jing-Hua Lin and Li Su, "Harmonic preserving neural networks for ef
 1. Put MusicNet training data under `<./Datasets/musicnet/train_data>` 
 and its labels under `<./Datasets/musicnet/train_labels>` 
 
-2. Start training with the following command:
+2. Put meta data file `musicnet_metadata.csv` under `<./Datasets/musicnet>` too.
 
-```
+3. Start training with the following command:
+
+```commandline
 python preprocess.py ./Datasets/musicnet
 
 python musicnet.py --root ./Datasets/musicnet \
