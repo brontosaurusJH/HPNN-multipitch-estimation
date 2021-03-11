@@ -33,6 +33,7 @@ parser.add_argument('--hopsize', type=int, default=512)
 parser.add_argument('--lr', type=float, default=1E-3)
 parser.add_argument('-g', nargs='+', type=float)
 # if gamma is specified with -g, gamma will not be trainable
+# a classic empirical gamma set: 0.24 0.6 1.0
 parser.add_argument('--harms_range', type=int, default=25)
 parser.add_argument('--steps', type=int, default=16000)
 parser.add_argument('--batch', type=int, default=128)
@@ -41,20 +42,18 @@ parser.add_argument('--trainsize', type=int, default=314)
 # 314 = 100% of MusicNet training data
 
 
-def init_weight(m):
+def _init_weight(m):
     if type(m) == nn.Conv2d:
         N = m.in_channels * np.prod(m.kernel_size)
         m.weight.data.normal_(0., np.sqrt(1 / N))
         if type(m.bias) == torch.Tensor:
             m.bias.data.fill_(0)
 
-
-def remove_weight_norms(m):
+def _remove_weight_norms(m):
     if hasattr(m, 'weight_g'):
         nn.utils.remove_weight_norm(m)
 
-
-def add_weight_norms(m):
+def _add_weight_norms(m):
     if hasattr(m, 'weight'):
         nn.utils.weight_norm(m)
 
@@ -100,8 +99,8 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     net = MLC_CFP_pianoroll(winsize, sr, g, hopsize,
                             harms_range, num_regions, mlc_trainable).to(device)
-    # net.apply(init_weight)
-    # net.apply(add_weight_norms)
+    # net.apply(_init_weight)
+    # net.apply(_add_weight_norms)
 
     print("    This model has", sum(p.numel()
                                     for p in net.parameters() if p.requires_grad), "parameters.\n")
@@ -127,6 +126,7 @@ if __name__ == '__main__':
             net.train()
             for batch_idx, (inputs, targets) in enumerate(train_loader):
                 inputs, targets = inputs.to(device), targets.to(device)
+                # range of piano keys
                 targets = targets[:, 21:109]
 
                 # scheduler.step()
@@ -151,6 +151,7 @@ if __name__ == '__main__':
                         y_score = []
                         for _, (inputs, targets) in enumerate(valid_loader):
                             inputs = inputs.to(device)
+                            # range of piano keys
                             targets = targets[:, 21:109]
                             y_true += [targets.detach().numpy()]
 
@@ -170,13 +171,12 @@ if __name__ == '__main__':
     else:
         print('==> Finish training.\n')
 
-        # -- mark ending time
         t_cost = time() - t_start
         t_cost = timedelta(seconds=t_cost)
 
         print("\n    RunTime: %s \n" % t_cost)
 
-    net.apply(remove_weight_norms)
+    net.apply(_remove_weight_norms)
     net.cpu()
     net = net.module if isinstance(net, torch.nn.DataParallel) else net
     torch.save(net, args.out_model)
