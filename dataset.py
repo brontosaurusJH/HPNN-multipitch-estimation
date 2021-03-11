@@ -29,7 +29,7 @@ class MAPS_Dataset(Dataset):
                  window_size=16384,
                  epoch_size=100000,
                  type='train',
-                 trainsize='100',
+                 trainsize=100,
                  *,
                  normalize=True):
         sampling_rate = 44100
@@ -91,7 +91,6 @@ class MAPS_Dataset(Dataset):
                 wav += [y]
             self.wav = wav
 
-            # time_step = hop_size / sampling_rate
             for filename, waves in zip(file_ids_valid, wav):
                 tree = read_MAPS_txt(os.path.join(folder, filename + '.txt'))
                 gt += [tree]
@@ -118,13 +117,6 @@ class MAPS_Dataset(Dataset):
 
         if self.normalize:
             y = y / (y.norm() + epsilon)
-            # torch.norm
-            # -- default dim=None, keepdim=False
-            # dim=int 會回傳 vector norm
-            # dim=None input tensor only 2D 時回傳 matrix norm, only 1D 時回傳 vector norm
-            # dim=None 時設 keepdim 會失效
-            # 之前是：
-            # y = y / (y.norm(dim=1, keepdim=True) + epsilon)
 
         return y, pianoroll
 
@@ -156,7 +148,7 @@ class MusicNet(Dataset):
     # testset = [2303, 1819, 2382]
     validset = [2131, 2384, 1792, 2514, 2567, 1876]
 
-    def __init__(self, root, type='train', trainsize='314', preprocess=False, mmap=False, normalize=True, window=16384, pitch_shift=0,
+    def __init__(self, root, type='train', trainsize=314, preprocess=False, mmap=False, normalize=True, window=16384, pitch_shift=0,
                  jitter=0., epoch_size=100000, category='all'):
         self.mmap = mmap
         self.normalize = normalize
@@ -166,7 +158,6 @@ class MusicNet(Dataset):
         self.size = epoch_size
         self.m = 128
 
-        # newly added
         self.trainsize = trainsize
 
         self.root = os.path.expanduser(root)
